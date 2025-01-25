@@ -4,13 +4,18 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install required dependencies for Python venv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-venv python3-dev gcc build-essential libssl-dev libffi-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy the application code into the container
 COPY . /app
 
-# Install virtual environment module
+# Create and activate the virtual environment
 RUN python -m venv /app/venv
 
-# Activate the virtual environment and install dependencies
+# Upgrade pip and install dependencies inside the virtual environment
 RUN /app/venv/bin/pip install --upgrade pip && \
     /app/venv/bin/pip install -r /app/requirements.txt
 
