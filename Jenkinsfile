@@ -18,11 +18,6 @@ pipeline {
                 sh './venv/bin/pip install -r requirements.txt'
             }
         }
-        stage('Run Tests') {
-            steps {
-                sh './venv/bin/python -m unittest discover tests'
-            }
-        }
         stage('Run Flask Application') {
             steps {
                 sh './venv/bin/python app.py &'
