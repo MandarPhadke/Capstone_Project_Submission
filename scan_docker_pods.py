@@ -251,13 +251,12 @@ def wrap_text_in_cells(data, col_widths, style):
 
 
 if __name__ == "__main__":
-    #pod_name = "prashanth153/nodejs-backend"
     parser = argparse.ArgumentParser(description="Scan Docker Pods")
     parser.add_argument("--podname", required=True, help="Name of the pod to scan")
     args = parser.parse_args()
     pod_name = args.podname
-    output = "../logs/"+pod_name+".json"
-    PDF_output = "../reports/"+pod_name+".pdf"
+    output = "+pod_name+".json"
+    PDF_output = pod_name+".pdf"
     status = 1
     # Ensure paths are absolute
     base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the script
