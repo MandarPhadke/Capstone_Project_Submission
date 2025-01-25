@@ -21,4 +21,4 @@ RUN python -m pip install --upgrade pip && \
 EXPOSE 5000
 
 # Command to activate the virtual environment and start the app
-CMD ["/bin/bash", "-c", "flask run --host=0.0.0.0 --port=5000"]
+CMD ["/bin/bash", "-c", "flask run --host=0.0.0.0 --port=5001"]
