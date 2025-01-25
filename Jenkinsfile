@@ -29,6 +29,12 @@ pipeline {
             }
         }
     }
+    stage('Deploy Flask App') {
+    steps {
+        sh 'docker build -t flask-app .'
+        sh 'docker run -d -p 5000:5000 flask-app'
+        }
+    }
 
     post {
         success {
