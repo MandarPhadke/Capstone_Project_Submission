@@ -4,7 +4,7 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install required dependencies for Python venv
+# Install required dependencies for venv creation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv python3-dev gcc build-essential libssl-dev libffi-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -12,12 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy the application code into the container
 COPY . /app
 
-# Create and activate the virtual environment
-RUN python -m venv /app/venv
+# Explicitly call python3 for venv creation
+RUN python3 -m venv /app/venv
 
 # Upgrade pip and install dependencies inside the virtual environment
-RUN /app/venv/bin/pip install --upgrade pip && \
-    /app/venv/bin/pip install -r /app/requirements.txt
+RUN /app/venv/bin/python -m pip install --upgrade pip && \
+    /app/venv/bin/python -m pip install -r /app/requirements.txt
 
 # Expose the Flask app port
 EXPOSE 5000
