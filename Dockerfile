@@ -6,14 +6,14 @@ WORKDIR /app
 
 # Install required dependencies for venv creation
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-venv python3-dev gcc build-essential libssl-dev libffi-dev && \
+    python3-venv python3-dev gcc build-essential libssl-dev libffi-dev python3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the application code into the container
 COPY . /app
 
 # Explicitly call python3 for venv creation
-RUN python3 -m venv /app/venv
+RUN python -m venv /app/venv
 
 # Upgrade pip and install dependencies inside the virtual environment
 RUN /app/venv/bin/python -m pip install --upgrade pip && \
