@@ -3,3 +3,4 @@ Flask~=2.3.2
 fpdf
 requests
 reportlab
+prometheus_client
