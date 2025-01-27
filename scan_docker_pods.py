@@ -4,7 +4,16 @@ import sys
 import json
 import requests
 import argparse
-PROMETHEUS_PUSHGATEWAY = "http://192.168.1.14:9090/"
+
+# Argument parsing
+parser = argparse.ArgumentParser(description="Scan Docker Pods")
+parser.add_argument("--podname", required=True, help="Name of the pod to scan")
+parser.add_argument("--output", required=False, help="Output file to store scan results")
+
+args = parser.parse_args()
+pod_name = args.podname
+output_file = args.output if args.output else "scan_results.json"
+
 def scan_docker_pod(pod_name: str):
     """
     Scan a Docker pod using Trivy.
@@ -60,47 +69,26 @@ def send_slack_notification(webhook_url, pod_name, vulnerabilities):
             f"{vulnerability_details}"
         )
     }
-    push_to_prometheus(image_name, critical_count, high_count)
-    #response = requests.post(webhook_url, json=message)
+
+    response = requests.post(webhook_url, json=message)
     print (response)
     if response.status_code == 200:
         print("Slack notification sent successfully.")
     else:
         print(f"Failed to send Slack notification. Status code: {response.status_code}")
 
-def push_to_prometheus(image_name, critical, high):
-    metric_data = f"""
-    # HELP docker_scan_critical_count Number of critical vulnerabilities
-    # TYPE docker_scan_critical_count gauge
-    docker_scan_critical_count{{image_name="{image_name}"}} {critical}
-
-    # HELP docker_scan_high_count Number of high vulnerabilities
-    # TYPE docker_scan_high_count gauge
-    docker_scan_high_count{{image_name="{image_name}"}} {high}
-    """
-    requests.post(f"{PROMETHEUS_PUSHGATEWAY}/metrics/job/docker_scan", data=metric_data)
-
 
 if __name__ == "__main__":
-    #pod_name = "nginx:latest"  # Example pod name
-    #output_json = "scan_results.json"
-    #output_pdf = "scan_report.pdf"
 
-    parser = argparse.ArgumentParser(description="Scan Docker Pods")
-    parser.add_argument("--podname", required=True, help="Name of the pod to scan")
-    args = parser.parse_args()
+
     pod_name = args.podname
-    output = pod_name+".json"
-    PDF_output = pod_name+".pdf"
+    output = output_file
     status = 1
 
-    #slack_webhook_url = "https://hooks.slack.com/services/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"
+    #slack_webhook_url = "https://hooks.slack.com/services/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"
 
     # Step 1: Scan the Docker pod
     scan_results = scan_docker_pod(pod_name)
-
-    # Step 2: Generate the PDF report
-    generate_pdf_from_json(scan_results, output_pdf)
 
     # Step 3: Check for critical vulnerabilities and send Slack notification
     critical_vulnerabilities = []
@@ -115,4 +103,3 @@ if __name__ == "__main__":
     else:
         print("No critical vulnerabilities found.")
         sys.exit(0)
-
