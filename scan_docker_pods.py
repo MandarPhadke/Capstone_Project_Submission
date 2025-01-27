@@ -94,7 +94,7 @@ if __name__ == "__main__":
     PDF_output = pod_name+".pdf"
     status = 1
 
-    slack_webhook_url = "https://hooks.slack.com/services/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"
+    #slack_webhook_url = "https://hooks.slack.com/services/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"
 
     # Step 1: Scan the Docker pod
     scan_results = scan_docker_pod(pod_name)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 critical_vulnerabilities.append(vulnerability)
 
     if critical_vulnerabilities:
-        send_slack_notification(slack_webhook_url, pod_name, critical_vulnerabilities)
+        #send_slack_notification(slack_webhook_url, pod_name, critical_vulnerabilities)
         sys.exit(1)
     else:
         print("No critical vulnerabilities found.")
