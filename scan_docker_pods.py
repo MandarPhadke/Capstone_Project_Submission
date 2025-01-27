@@ -1,8 +1,12 @@
 import subprocess
 import sys
 import json
-import requests
 import argparse
+import time
+from prometheus_client import start_http_server, Gauge
+
+# Prometheus metrics setup
+CRITICAL_VULN_GAUGE = Gauge('docker_critical_vulnerabilities', 'Number of critical vulnerabilities found', ['image'])
 
 def parse_arguments():
     """
@@ -14,7 +18,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Scan Docker Images with Trivy")
     parser.add_argument("--podname", required=True, help="Name of the Docker image to scan")
     parser.add_argument("--output", required=False, default="scan_results.json", help="Output file to store scan results")
-    #parser.add_argument("--slack_webhook", required=False, help="Slack webhook URL for notifications")
     return parser.parse_args()
 
 def scan_docker_image(image_name):
@@ -61,47 +64,13 @@ def save_scan_results(scan_results, output_file):
         print(f"Error saving scan results: {e}")
         sys.exit(1)
 
-def send_slack_notification(webhook_url, image_name, vulnerabilities):
+def analyze_scan_results(scan_results, image_name):
     """
-    Send a Slack notification for critical vulnerabilities.
-
-    Args:
-        webhook_url (str): Slack webhook URL.
-        image_name (str): The name of the Docker image.
-        vulnerabilities (list): List of critical vulnerabilities.
-    """
-    if not webhook_url:
-        print("Slack webhook URL is not provided.")
-        return
-
-    vulnerability_details = "\n".join([
-        f"- {vuln.get('VulnerabilityID', 'N/A')}: {vuln.get('Title', 'N/A')}"
-        for vuln in vulnerabilities
-    ])
-
-    message = {
-        "text": (
-            f":warning: *Critical Vulnerabilities Detected in Image: {image_name}*\n\n"
-            f"The following critical vulnerabilities were found:\n"
-            f"{vulnerability_details}"
-        )
-    }
-
-    try:
-        response = requests.post(webhook_url, json=message)
-        if response.status_code == 200:
-            print("Slack notification sent successfully.")
-        else:
-            print(f"Failed to send Slack notification. Status code: {response.status_code}")
-    except requests.RequestException as e:
-        print(f"Error sending Slack notification: {e}")
-
-def analyze_scan_results(scan_results):
-    """
-    Analyze scan results and return critical vulnerabilities.
+    Analyze scan results and update Prometheus metrics.
 
     Args:
         scan_results (dict): Trivy scan results in JSON format.
+        image_name (str): The Docker image name being analyzed.
 
     Returns:
         list: List of critical vulnerabilities found.
@@ -112,24 +81,32 @@ def analyze_scan_results(scan_results):
             if vulnerability.get("Severity") == "CRITICAL":
                 critical_vulnerabilities.append(vulnerability)
 
+    critical_count = len(critical_vulnerabilities)
+    CRITICAL_VULN_GAUGE.labels(image=image_name).set(critical_count)
+    print(f"Updated Prometheus metric for {image_name}: {critical_count} critical vulnerabilities.")
+
     return critical_vulnerabilities
 
 if __name__ == "__main__":
     args = parse_arguments()
 
-    # Step 1: Scan the Docker image
-    scan_results = scan_docker_image(args.podname)
+    # Start Prometheus HTTP server to expose metrics on port 8000
+    start_http_server(8000)
+    print("Prometheus metrics available at http://localhost:8000")
 
-    # Step 2: Save the scan results
-    save_scan_results(scan_results, args.output)
+    while True:
+        # Step 1: Scan the Docker image
+        scan_results = scan_docker_image(args.podname)
 
-    # Step 3: Analyze vulnerabilities and notify if critical found
-    critical_vulnerabilities = analyze_scan_results(scan_results)
+        # Step 2: Save the scan results
+        save_scan_results(scan_results, args.output)
 
-    if critical_vulnerabilities:
-        print(f"Critical vulnerabilities found: {len(critical_vulnerabilities)}")
-        #send_slack_notification(args.slack_webhook, args.podname, critical_vulnerabilities)
-        sys.exit(1)
-    else:
-        print("No critical vulnerabilities found.")
-        sys.exit(0)
+        # Step 3: Analyze vulnerabilities and update Prometheus metrics
+        critical_vulnerabilities = analyze_scan_results(scan_results, args.podname)
+
+        if critical_vulnerabilities:
+            print(f"Critical vulnerabilities found: {len(critical_vulnerabilities)}")
+            sys.exit(1)
+        else:
+            print("No critical vulnerabilities found.")
+            time.sleep(300)  # Sleep for 5 minutes before the next scan
