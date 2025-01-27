@@ -15,6 +15,7 @@ COPY . /app
 
 # Upgrade pip and install dependencies inside the virtual environment
 RUN python -m pip install --upgrade pip && \
+    python -m pip install prometheus_client && \
     python -m pip install -r /app/requirements.txt
 
 # Expose the Flask app port
