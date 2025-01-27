@@ -14,7 +14,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Scan Docker Images with Trivy")
     parser.add_argument("--podname", required=True, help="Name of the Docker image to scan")
     parser.add_argument("--output", required=False, default="scan_results.json", help="Output file to store scan results")
-    parser.add_argument("--slack_webhook", required=False, help="Slack webhook URL for notifications")
+    #parser.add_argument("--slack_webhook", required=False, help="Slack webhook URL for notifications")
     return parser.parse_args()
 
 def scan_docker_image(image_name):
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     if critical_vulnerabilities:
         print(f"Critical vulnerabilities found: {len(critical_vulnerabilities)}")
-        send_slack_notification(args.slack_webhook, args.podname, critical_vulnerabilities)
+        #send_slack_notification(args.slack_webhook, args.podname, critical_vulnerabilities)
         sys.exit(1)
     else:
         print("No critical vulnerabilities found.")
