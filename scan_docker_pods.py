@@ -12,7 +12,7 @@ parser.add_argument("--output", required=False, help="Output file to store scan 
 
 args = parser.parse_args()
 pod_name = args.podname
-output_file = args.output if args.output else "scan_results.json"
+#output_file = args.output if args.output else "scan_results.json"
 
 def scan_docker_pod(pod_name: str):
     """
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
 
     pod_name = args.podname
-    output = output_file
+    #output = output_file
     status = 1
 
     #slack_webhook_url = "https://hooks.slack.com/services/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"
@@ -98,6 +98,7 @@ if __name__ == "__main__":
                 critical_vulnerabilities.append(vulnerability)
 
     if critical_vulnerabilities:
+        print("critical_vulnerabilities")
         #send_slack_notification(slack_webhook_url, pod_name, critical_vulnerabilities)
         sys.exit(1)
     else:

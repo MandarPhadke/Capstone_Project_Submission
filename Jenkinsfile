@@ -4,7 +4,6 @@ pipeline {
     environment {
         IMAGE_NAME = "flask-app:latest"
         SCAN_SCRIPT_URL = "https://raw.githubusercontent.com/MandarPhadke/Capstone_Project_Submission/refs/heads/main/scan_docker_pods.py"
-        SCAN_OUTPUT_FILE = "scan_results.json"
     }
 
     stages {
@@ -33,7 +32,7 @@ pipeline {
                 script {
                     sh """
                         curl -o scan_docker_pods.py ${SCAN_SCRIPT_URL}
-                        python3 scan_docker_pods.py --podname ${IMAGE_NAME} --output ${SCAN_OUTPUT_FILE}
+                        python3 scan_docker_pods.py --podname ${IMAGE_NAME}
                     """
                     
                     def scanResults = readJSON(file: SCAN_OUTPUT_FILE)
