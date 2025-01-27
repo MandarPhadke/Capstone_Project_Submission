@@ -1,105 +1,134 @@
 import subprocess
-import os
 import sys
 import json
 import requests
 import argparse
 
-# Argument parsing
-parser = argparse.ArgumentParser(description="Scan Docker Pods")
-parser.add_argument("--podname", required=True, help="Name of the pod to scan")
-parser.add_argument("--output", required=False, help="Output file to store scan results")
-
-args = parser.parse_args()
-pod_name = args.podname
-#output_file = args.output if args.output else "scan_results.json"
-
-def scan_docker_pod(pod_name: str):
+def parse_arguments():
     """
-    Scan a Docker pod using Trivy.
+    Parse command-line arguments.
+
+    Returns:
+        Namespace: Parsed arguments containing podname and output.
+    """
+    parser = argparse.ArgumentParser(description="Scan Docker Images with Trivy")
+    parser.add_argument("--podname", required=True, help="Name of the Docker image to scan")
+    parser.add_argument("--output", required=False, default="scan_results.json", help="Output file to store scan results")
+    parser.add_argument("--slack_webhook", required=False, help="Slack webhook URL for notifications")
+    return parser.parse_args()
+
+def scan_docker_image(image_name):
+    """
+    Scan a Docker image using Trivy and return scan results.
 
     Args:
-        pod_name (str): The name of the Docker pod or container to scan.
+        image_name (str): The name of the Docker image to scan.
 
     Returns:
         dict: Trivy scan results in JSON format.
     """
     try:
-        print(f"Scanning pod: {pod_name} using Trivy...")
-        # Run the Trivy scan command
-        command = ["trivy", "image", "--format", "json", pod_name]
-        result = subprocess.run(command, capture_output=True, text=True)
+        print(f"Scanning Docker image: {image_name} using Trivy...")
+        command = ["trivy", "image", "--format", "json", image_name]
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
 
-        # Check if the command succeeded
-        if result.returncode != 0:
-            print("Error occurred during scanning:")
-            print(result.stderr)
-            sys.exit(1)
-
-        # Parse the JSON output
         scan_results = json.loads(result.stdout)
         return scan_results
 
+    except subprocess.CalledProcessError as e:
+        print(f"Error during scanning: {e.stderr}")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"Error decoding Trivy JSON output: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"An error occurred during scanning: {e}")
+        print(f"Unexpected error during scanning: {e}")
         sys.exit(1)
 
-def send_slack_notification(webhook_url, pod_name, vulnerabilities):
+def save_scan_results(scan_results, output_file):
     """
-    Send a Slack notification about critical vulnerabilities.
+    Save scan results to a file.
+
+    Args:
+        scan_results (dict): Scan results in JSON format.
+        output_file (str): The file path to save the scan results.
+    """
+    try:
+        with open(output_file, "w") as f:
+            json.dump(scan_results, f, indent=4)
+        print(f"Scan results saved to {output_file}")
+    except Exception as e:
+        print(f"Error saving scan results: {e}")
+        sys.exit(1)
+
+def send_slack_notification(webhook_url, image_name, vulnerabilities):
+    """
+    Send a Slack notification for critical vulnerabilities.
 
     Args:
         webhook_url (str): Slack webhook URL.
-        pod_name (str): The name of the Docker pod.
+        image_name (str): The name of the Docker image.
         vulnerabilities (list): List of critical vulnerabilities.
     """
     if not webhook_url:
-        print("Slack webhook URL is not configured.")
+        print("Slack webhook URL is not provided.")
         return
 
     vulnerability_details = "\n".join([
-        f"- {vuln['VulnerabilityID']}: {vuln['Description']}"
+        f"- {vuln.get('VulnerabilityID', 'N/A')}: {vuln.get('Title', 'N/A')}"
         for vuln in vulnerabilities
     ])
 
     message = {
         "text": (
-            f":warning: *Critical Vulnerabilities Detected in Pod: {pod_name}*\n\n"
+            f":warning: *Critical Vulnerabilities Detected in Image: {image_name}*\n\n"
             f"The following critical vulnerabilities were found:\n"
             f"{vulnerability_details}"
         )
     }
 
-    response = requests.post(webhook_url, json=message)
-    print (response)
-    if response.status_code == 200:
-        print("Slack notification sent successfully.")
-    else:
-        print(f"Failed to send Slack notification. Status code: {response.status_code}")
+    try:
+        response = requests.post(webhook_url, json=message)
+        if response.status_code == 200:
+            print("Slack notification sent successfully.")
+        else:
+            print(f"Failed to send Slack notification. Status code: {response.status_code}")
+    except requests.RequestException as e:
+        print(f"Error sending Slack notification: {e}")
 
+def analyze_scan_results(scan_results):
+    """
+    Analyze scan results and return critical vulnerabilities.
 
-if __name__ == "__main__":
+    Args:
+        scan_results (dict): Trivy scan results in JSON format.
 
-
-    pod_name = args.podname
-    #output = output_file
-    status = 1
-
-    #slack_webhook_url = "https://hooks.slack.com/services/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"
-
-    # Step 1: Scan the Docker pod
-    scan_results = scan_docker_pod(pod_name)
-
-    # Step 3: Check for critical vulnerabilities and send Slack notification
+    Returns:
+        list: List of critical vulnerabilities found.
+    """
     critical_vulnerabilities = []
     for result in scan_results.get("Results", []):
         for vulnerability in result.get("Vulnerabilities", []):
             if vulnerability.get("Severity") == "CRITICAL":
                 critical_vulnerabilities.append(vulnerability)
 
+    return critical_vulnerabilities
+
+if __name__ == "__main__":
+    args = parse_arguments()
+
+    # Step 1: Scan the Docker image
+    scan_results = scan_docker_image(args.podname)
+
+    # Step 2: Save the scan results
+    save_scan_results(scan_results, args.output)
+
+    # Step 3: Analyze vulnerabilities and notify if critical found
+    critical_vulnerabilities = analyze_scan_results(scan_results)
+
     if critical_vulnerabilities:
-        print("critical_vulnerabilities")
-        #send_slack_notification(slack_webhook_url, pod_name, critical_vulnerabilities)
+        print(f"Critical vulnerabilities found: {len(critical_vulnerabilities)}")
+        send_slack_notification(args.slack_webhook, args.podname, critical_vulnerabilities)
         sys.exit(1)
     else:
         print("No critical vulnerabilities found.")

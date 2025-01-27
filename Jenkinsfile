@@ -1,4 +1,5 @@
-agent any
+pipeline {
+    agent any
 
     environment {
         VIRTUAL_ENV = "${WORKSPACE}/venv"
@@ -8,28 +9,34 @@ agent any
     }
 
     stages {
-       {
+        stage('Clone Repository') {
+            steps {
                 git branch: 'main', url: 'https://github.com/MandarPhadke/DevOps-Simulated-2FA-Flask.git'
             }
         }
         
         stage('Setup Python Environment') {
             steps {
-                sh 'python -m venv venv'
-                sh 'python3 -m venv venv'
+                sh 'python3 -m venv venv'  // Using python3 explicitly for virtualenv
                 sh './venv/bin/pip install --upgrade pip'
                 sh './venv/bin/pip install -r requirements.txt'
             }
         }
+
         stage('Run Flask Application') {
+            steps {
+                sh './venv/bin/python app.py &'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t ${IMAGE_NAME} ."
             }
         }
+
         stage('Download and Scan Docker Image') {
             steps {
-                sh './venv/bin/python app.py &'
                 script {
                     sh """
                         curl -o scan_docker_pods.py ${SCAN_SCRIPT_URL}
@@ -38,6 +45,7 @@ agent any
                     
                     def scanResults = readJSON(file: SCAN_OUTPUT_FILE)
                     def criticalCount = 0
+
                     for (result in scanResults.Results) {
                         for (vuln in result.Vulnerabilities) {
                             if (vuln.Severity == "CRITICAL") {
@@ -45,6 +53,7 @@ agent any
                             }
                         }
                     }
+
                     if (criticalCount > 0) {
                         echo "Critical vulnerabilities found: ${criticalCount}"
                         error("Stopping build due to security vulnerabilities.")
@@ -59,25 +68,21 @@ agent any
                 }
             }
         }
-    stage('Deploy Flask App') {
-    steps {
-        sh 'docker build -t flask-app .'
-        sh 'docker run -d -p 5001:5001 flask-app'
+
         stage('Deploy Flask Application') {
             steps {
+                sh 'docker build -t flask-app .'
+                sh 'docker run -d -p 5001:5001 flask-app'
                 sh "docker run -d -p 5000:5000 ${IMAGE_NAME}"
             }
         }
     }
-    }
 
     post {
         success {
-            echo 'Build and deployment successful!'
             echo 'Build, scan, and deployment successful!'
         }
         failure {
-            echo 'Build failed. Check logs for details.'
             echo 'Build or security scan failed!'
         }
     }
