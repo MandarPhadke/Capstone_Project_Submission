@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-app:latest"
-        SCAN_SCRIPT_URL = "https://raw.githubusercontent.com/MandarPhadke/Container-Image-Vulnerability-Scanner-with-Reporting/main/scripts/scan_docker_pods.py"
+        SCAN_SCRIPT_URL = "https://raw.githubusercontent.com/MandarPhadke/Capstone_Project_Submission/refs/heads/main/scan_docker_pods.py"
         SCAN_OUTPUT_FILE = "scan_results.json"
     }
 
