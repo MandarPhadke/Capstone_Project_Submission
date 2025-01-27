@@ -4,7 +4,7 @@ import sys
 import json
 import requests
 import argparse
-
+PROMETHEUS_PUSHGATEWAY = "http://192.168.1.14:9090/"
 def scan_docker_pod(pod_name: str):
     """
     Scan a Docker pod using Trivy.
@@ -60,13 +60,25 @@ def send_slack_notification(webhook_url, pod_name, vulnerabilities):
             f"{vulnerability_details}"
         )
     }
-
-    response = requests.post(webhook_url, json=message)
+    push_to_prometheus(image_name, critical_count, high_count)
+    #response = requests.post(webhook_url, json=message)
     print (response)
     if response.status_code == 200:
         print("Slack notification sent successfully.")
     else:
         print(f"Failed to send Slack notification. Status code: {response.status_code}")
+
+def push_to_prometheus(image_name, critical, high):
+    metric_data = f"""
+    # HELP docker_scan_critical_count Number of critical vulnerabilities
+    # TYPE docker_scan_critical_count gauge
+    docker_scan_critical_count{{image_name="{image_name}"}} {critical}
+
+    # HELP docker_scan_high_count Number of high vulnerabilities
+    # TYPE docker_scan_high_count gauge
+    docker_scan_high_count{{image_name="{image_name}"}} {high}
+    """
+    requests.post(f"{PROMETHEUS_PUSHGATEWAY}/metrics/job/docker_scan", data=metric_data)
 
 
 if __name__ == "__main__":
@@ -82,7 +94,7 @@ if __name__ == "__main__":
     PDF_output = pod_name+".pdf"
     status = 1
 
-    slack_webhook_url = "https://hooks.slack.com/services/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"
+    slack_webhook_url = "https://hooks.slack.com/services/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"
 
     # Step 1: Scan the Docker pod
     scan_results = scan_docker_pod(pod_name)
@@ -103,3 +115,4 @@ if __name__ == "__main__":
     else:
         print("No critical vulnerabilities found.")
         sys.exit(0)
+
