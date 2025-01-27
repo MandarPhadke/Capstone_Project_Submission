@@ -40,7 +40,7 @@ pipeline {
                 script {
                     sh """
                         curl -o scan_docker_pods.py ${SCAN_SCRIPT_URL}
-                        python3 scan_docker_pods.py --podname ${IMAGE_NAME} --output ${SCAN_OUTPUT_FILE}
+                        ./venv/bin/python scan_docker_pods.py --podname ${IMAGE_NAME} --output ${SCAN_OUTPUT_FILE}
                     """
                     
                     def scanResults = readJSON(file: SCAN_OUTPUT_FILE)
