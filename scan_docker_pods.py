@@ -91,7 +91,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     # Start Prometheus HTTP server to expose metrics on port 8000
-    start_http_server(8000)
+    start_http_server(9090)
     print("Prometheus metrics available at http://localhost:8000")
 
     while True:
