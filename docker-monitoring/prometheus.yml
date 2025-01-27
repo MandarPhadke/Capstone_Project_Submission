@@ -1,7 +1,0 @@
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'docker-vulnerability-scanner'
-    static_configs:
-      - targets: ['trivy-scanner:8000']
