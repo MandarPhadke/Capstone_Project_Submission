@@ -54,11 +54,6 @@ pipeline {
                     }
                 }
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: "${SCAN_OUTPUT_FILE}", fingerprint: true
-                }
-            }
         }
 
         stage('Deploy Flask Application') {
