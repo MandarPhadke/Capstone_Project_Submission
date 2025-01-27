@@ -1,3 +1,7 @@
+
+![Capstone_Architecture_Diagram drawio](https://github.com/user-attachments/assets/cee8224e-2bdb-4f61-b4ca-5ea4ef609cc8)
+
+
 # Docker Image Vulnerability Scanner with Historical Tracking
 
 This project provides an automated solution to **scan Docker container images for vulnerabilities** using **Trivy**, store the scan results, and visualize historical vulnerability trends using **Prometheus and Grafana**.
