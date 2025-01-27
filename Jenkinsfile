@@ -4,7 +4,7 @@ pipeline {
     environment {
         VIRTUAL_ENV = "${WORKSPACE}/venv"
         IMAGE_NAME = "flask-app:latest"
-        SCAN_SCRIPT_URL = "https://github.com/MandarPhadke/Capstone_Project_Submission/blob/main/scan_docker_pods.py"
+        SCAN_SCRIPT_URL = "https://raw.githubusercontent.com/MandarPhadke/Capstone_Project_Submission/refs/heads/main/scan_docker_pods.py"
         SCAN_OUTPUT_FILE = "scan_results.json"
     }
 
