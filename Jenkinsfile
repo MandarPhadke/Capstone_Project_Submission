@@ -8,7 +8,7 @@ agent any
     }
 
     stages {
-      pipeline {
+       {
                 git branch: 'main', url: 'https://github.com/MandarPhadke/DevOps-Simulated-2FA-Flask.git'
             }
         }
